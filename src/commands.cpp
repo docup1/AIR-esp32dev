@@ -4,7 +4,8 @@
 #include "globals.h"
 #include <map>
 #include <functional>
-
+#include <vm.h>
+#include <commands/handlerun.h>
 fs::File outputFile;
 bool outputRedirected = false;
 String currentDirectory = "/";
@@ -87,6 +88,7 @@ void handleCommand(String input) {
         {"wifilist", [](String) { handleWifiList(); }},
         {"wifiremove", [](String args) { handleWifiRemove(args); }},
         {"wificonnect", [](String args) { handleWifiConnect(args); }},
+        {"compile", [](String args) { handleCompile(args); }},
         {"help", [](String) { printHelp(); }}
 
     };
@@ -138,6 +140,7 @@ void printHelp() {
     helpText += "wificreate <ssid> <pass> [channel] - Настроить точку доступа\n";
     helpText += "wificonnect <ssid> <pass> - Настроить подключение\n";
     helpText += "wifiinfo - Показать текущие настройки\n";
+    helpText += "compile <file> <bytecode> - Создать бинарный файл из текстового байт-кода\n";
     writeOutput(helpText);
 }
 
@@ -204,9 +207,7 @@ void handleScript(String args) {
     file.close();
 }
 
-void handleRun(String args) {
-    writeOutput("Запуск ВМ временно не доступен\n");
-}
+
 
 void handleInfoLog() {
     printLastLines("/system/outputs/info.log", 6);
@@ -445,4 +446,68 @@ void handleWifiInfo() {
         info += "Канал: " + String(config.channel) + "\n";
     }
     writeOutput(info);
+}
+void handleCompile(String args) {
+    // Ожидается: compile <output_file> <bytecode>
+    int firstSpace = args.indexOf(' ');
+    if (firstSpace == -1) {
+        writeOutput("Использование: compile <output_file> <bytecode>\n");
+        return;
+    }
+
+    String filename = args.substring(0, firstSpace);
+    String bytecodeText = args.substring(firstSpace + 1);
+
+    // Преобразуем текстовое представление в бинарный массив
+    uint8_t buffer[MEM_SIZE];
+    size_t bufferSize = 0;
+
+    int start = 0;
+    while (start < bytecodeText.length() && bufferSize < MEM_SIZE) {
+        // Пропускаем разделители: пробелы, запятые, переводы строки
+        while (start < bytecodeText.length() && 
+              (bytecodeText[start] == ' ' || bytecodeText[start] == ',' ||
+               bytecodeText[start] == '\n' || bytecodeText[start] == '\r')) {
+            start++;
+        }
+        if (start >= bytecodeText.length()) break;
+
+        // Находим конец токена
+        int end = start;
+        while (end < bytecodeText.length() && 
+              (bytecodeText[end] != ' ' && bytecodeText[end] != ',' &&
+               bytecodeText[end] != '\n' && bytecodeText[end] != '\r')) {
+            end++;
+        }
+        String token = bytecodeText.substring(start, end);
+        token.trim();
+        if (token.length() > 0) {
+            // Если токен начинается с "0x" или "0X", парсим как шестнадцатиричное число
+            if (token.startsWith("0x") || token.startsWith("0X")) {
+                buffer[bufferSize++] = strtol(token.c_str(), NULL, 16);
+            }
+            // Если токен начинается с одинарной кавычки, то берём следующий символ как байт
+            else if (token.charAt(0) == '\'' && token.length() >= 2) {
+                buffer[bufferSize++] = token.charAt(1);
+            }
+            // Иначе пытаемся разобрать токен как шестнадцатиричное число без префикса
+            else {
+                buffer[bufferSize++] = strtol(token.c_str(), NULL, 16);
+            }
+        }
+        start = end + 1;
+    }
+
+    // Сохраняем бинарный файл
+    String fullPath = normalizePath(filename);
+    File file = LittleFS.open(fullPath, "w");
+    if (!file) {
+        writeOutput("Ошибка создания файла: " + fullPath + "\n");
+        return;
+    }
+    file.write(buffer, bufferSize);
+    file.close();
+
+    writeOutput("Файл создан: " + fullPath + "\n");
+    writeOutput("Размер: " + String(bufferSize) + " байт\n");
 }
