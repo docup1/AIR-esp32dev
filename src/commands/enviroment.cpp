@@ -1,6 +1,36 @@
-#include "environment.h"
-#include "globals.h"
+#include <Arduino.h>
 #include <EEPROM.h>
+#include "commands/utils.h"
+#include "commands/environment.h"
+
+EnvVar envVars[MAX_ENV_VARS];
+int envVarCount = 0;
+
+void handleSetEnv(String args) {
+    int spacePos = args.indexOf(' ');
+    if (spacePos == -1) {
+        writeOutput("Использование: setenv <key> <value>\n");
+        return;
+    }
+    String key = args.substring(0, spacePos);
+    String value = args.substring(spacePos + 1);
+    setEnvVar(key, value);
+}
+
+void handleGetEnv(String args) {
+    String value = getEnvVar(args);
+    writeOutput(value + "\n");
+}
+
+void handleUnsetEnv(String args) {
+    unsetEnvVar(args);
+}
+
+void handlePrintEnv() {
+    for (int i = 0; i < envVarCount; i++) {
+        writeOutput(envVars[i].key + "=" + envVars[i].value + "\n");
+    }
+}
 
 String getEnvVar(const String& key) {
     for (int i = 0; i < envVarCount; i++) {

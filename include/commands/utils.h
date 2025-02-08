@@ -2,11 +2,15 @@
 #define UTILS_H
 
 #include <Arduino.h>
-#include "globals.h"
-#include "environment.h" // Для getEnvVar
+#include <LittleFS.h>
 
 String normalizePath(String path);
 bool checkArgs(String args, int required);
 void writeOutput(const String &text);
+void printLastLines(String path, int lines);
+
+extern fs::File outputFile;
+extern bool outputRedirected;
+extern String currentDirectory;
 
 #endif

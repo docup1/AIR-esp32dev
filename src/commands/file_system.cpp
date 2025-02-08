@@ -1,81 +1,10 @@
-#include "file_system.h"
-#include "utils.h"         // Для normalizePath
-#include "environment.h"   // Для функций работы с переменными окружения
-#include "globals.h"
-#include "commands.h"
+#include "command_includes.h"
 #include <FS.h>
 #include <EEPROM.h>
 
 // =================== Функции работы с файловой системой (LittleFS) ===================
 
-void initializeFS() {
-  Serial.println("\nИнициализация LittleFS...");
-  if (!LittleFS.begin(true)) {
-    Serial.println("Ошибка монтирования, пробуем форматировать...");
-    if (!LittleFS.format()) {
-      Serial.println("Ошибка форматирования!");
-      return;
-    }
-    if (!LittleFS.begin(true)) {
-      Serial.println("Повторная ошибка монтирования!");
-      return;
-    }
-  }
-  EEPROM.begin(EEPROM_SIZE);
-  loadEnvVars();  // Функция загрузки переменных окружения из EEPROM
 
-  // Создание структуры каталогов
-  const char* dirs[] = {
-    "/system", "/system/outputs", "/config",
-    "/utils", "/utils/scripts", "/utils/tools",
-    "/home", "/system/systemdata.dat"
-  };
-
-  for (const char* dir : dirs) {
-    if (!LittleFS.exists(dir)) {
-      if (!LittleFS.mkdir(dir)) {
-        Serial.println("Ошибка создания директории: " + String(dir));
-      }
-    }
-  }
-
-  // Создание базовых конфигурационных файлов
-  const char* files[] = {
-    "/system/board.conf",
-    "/system/outputs/info.log",
-    "/system/outputs/error.log",
-    "/system/settings.conf",
-    "/system/device_info.conf",
-    "/config/wifi.conf",
-    "/config/wifi_list.conf",
-    "/config/port_init.conf",
-    "/config/interface_init.conf"
-  };
-
-  for (const char* file : files) {
-    if (!LittleFS.exists(file)) {
-      fs::File f = LittleFS.open(file, FILE_WRITE);
-      if (!f) {
-        Serial.println("Ошибка создания файла: " + String(file));
-      } else {
-        f.close();
-      }
-    }
-  }
-  if (!LittleFS.exists("/config/wifi.conf")) {
-    WifiConfig defaultConfig;
-    defaultConfig.createMode = false;
-    defaultConfig.ssid = "";
-    defaultConfig.password = "";
-    defaultConfig.channel = 1;
-    writeWifiConfig(defaultConfig);
-  }
-  if (!LittleFS.exists("/system/systemdata.dat")) {
-    fs::File f = LittleFS.open("/system/systemdata.dat", "w");
-    f.close();
-  }
-  Serial.println("Файловая система готова\n");
-}
 
 void printTree(String path, int depth) {
   String prefix = "";
@@ -334,50 +263,9 @@ void writeToFile(String path, String content, const char* mode) {
   }
 }
 
-void printLastLines(String path, int lines) {
-  fs::File file = LittleFS.open(path);
-  if (!file) {
-    writeOutput("Лог файл не найден\n");
-    return;
-  }
-  // Здесь можно реализовать чтение последних строк файла (при необходимости)
-  while (file.available()) {
-    writeOutput(String((char)file.read()));
-  }
-  file.close();
-}
 
-void addWifiToList(const String& ssid, const String& password) {
-  fs::File file = LittleFS.open("/config/wifi_list.conf", FILE_APPEND);
-  if (!file) {
-    writeOutput("Ошибка открытия файла wifi_list.conf\n");
-    return;
-  }
-  String entry = ssid + ";" + password + "\n";
-  file.print(entry);
-  file.close();
-  writeOutput("Сеть добавлена в список: " + ssid + "\n");
-}
 
-bool findWifiInList(const String& ssid, String& password) {
-  fs::File file = LittleFS.open("/config/wifi_list.conf", FILE_READ);
-  if (!file) {
-    writeOutput("Ошибка открытия файла wifi_list.conf\n");
-    return false;
-  }
-  while (file.available()) {
-    String line = file.readStringUntil('\n');
-    line.trim();
-    int separator = line.indexOf(';');
-    if (separator != -1 && line.startsWith(ssid)) {
-      password = line.substring(separator + 1);
-      file.close();
-      return true;
-    }
-  }
-  file.close();
-  return false;
-}
+
 
 // =================== Конец интегрированного кода ===================
 

@@ -1,5 +1,25 @@
-#include "utils.h"
-#include "environment.h" // Для getEnvVar
+#include "commands/utils.h"
+#include "commands/environment.h"
+
+fs::File outputFile;
+bool outputRedirected = false;
+String currentDirectory = "/";
+
+bool checkArgs(String args, int required) {
+    int count = 0;
+    for (size_t i = 0; i < args.length(); i++) {
+        if (args[i] == ' ') count++;
+    }
+    return (count + 1) >= required;
+}
+
+void writeOutput(const String &text) {
+    if (outputRedirected && outputFile) {
+        outputFile.print(text);
+    } else {
+        Serial.print(text);
+    }
+}
 
 String normalizePath(String path) {
     String result = path;
@@ -44,18 +64,15 @@ String normalizePath(String path) {
     return currentDirectory + "/" + result;
 }
 
-bool checkArgs(String args, int required) {
-    int count = 0;
-    for (size_t i = 0; i < args.length(); i++) {
-        if (args[i] == ' ') count++;
-    }
-    return (count + 1) >= required;
-}
-
-void writeOutput(const String &text) {
-    if (outputRedirected && outputFile) {
-        outputFile.print(text);
-    } else {
-        Serial.print(text);
-    }
+void printLastLines(String path, int lines) {
+  fs::File file = LittleFS.open(path);
+  if (!file) {
+    writeOutput("Лог файл не найден\n");
+    return;
+  }
+  // Здесь можно реализовать чтение последних строк файла (при необходимости)
+  while (file.available()) {
+    writeOutput(String((char)file.read()));
+  }
+  file.close();
 }

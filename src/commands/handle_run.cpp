@@ -1,6 +1,6 @@
-#include <commands/handlerun.h>
+#include <commands/handle_run.h>
+#include <commands/utils.h>
 #include "vm.h"
-#include "utils.h"
 
 VirtualMachine vm; 
 
