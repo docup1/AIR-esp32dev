@@ -7,7 +7,7 @@
 #include <commands/wifi.h>
 #include "commands/file_system.h"
 #include "commands/logs.h"
-
-
+#include "commands/system.h"
+#include "commands/programs.h"
 
 #endif
