@@ -24,7 +24,7 @@ void initializeFS() {
   // Создание структуры каталогов
   const char* dirs[] = {
     "/system", "/system/outputs", "/config",
-    "/utils", "/utils/scripts", "/utils/tools",
+    "/utils", "/utils/scripts", "/utils/tools", 
     "/home", "/system/systemdata.dat"
   };
 
@@ -112,6 +112,9 @@ void handleCommand(String input) {
     }
 
     Command cmd = parseCommand(input);
+
+    //TODO: функции должны только возвращать данные а не выводить данные на прямую в сериал
+    //TODO: реализовать потоки для ввода и вывода 
 
     // Карта команд с функциями-обработчиками
     std::map<String, std::function<void(String)>> commandHandlers = {

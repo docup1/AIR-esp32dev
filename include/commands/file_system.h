@@ -1,26 +1,22 @@
 #ifndef FILE_SYSTEM_H
 #define FILE_SYSTEM_H
 
-#pragma once
-
-#include <LittleFS.h>
-#include <WString.h>
+#include <Arduino.h>
 #include <FS.h>
 
-
-String formatSize(size_t bytes); 
-void printTree(String path, int depth = 0);
-void listFiles(String path);
-void createFile(String path);
-void deleteFile(String path);
-void createDir(String path);
-void deleteDir(String path);
-void changeDir(String path);
-void copyFile(String args);
-void moveFile(String args);
+// Объявления функций с использованием передачи по константной ссылке
+void printTree(const String &path, int depth = 0);
+void listFiles(const String &path);
+void createFile(const String &path);
+void deleteFile(const String &path);
+void createDir(const String &path);
+void deleteDir(const String &path);
+void changeDir(const String &path);
+void copyFile(const String &args);
+void moveFile(const String &args);
+String formatSize(size_t bytes);
 void printFSInfo();
 void printWorkingDir();
-void writeToFile(String path, String content, const char* mode = FILE_WRITE);
+void writeToFile(const String &path, const String &content, const char* mode = "w");
 
-
-#endif
+#endif // FILE_SYSTEM_H
